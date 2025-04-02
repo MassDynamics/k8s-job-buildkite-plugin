@@ -27,7 +27,7 @@ DEFAULT_LABELS=$(cat <<EOF
 {"service": "buildkite", "pipeline": "${BUILDKITE_PIPELINE_SLUG}", "step": "${BUILDKITE_STEP_ID}"}
 EOF
 )
-LABELS=$(echo "${DEFAULT_LABELS}" | jq -c --argjson extra "${CUSTOM_LABELS}" '. + $custom')
+LABELS=$(echo "${DEFAULT_LABELS}" | jq -c --argjson custom "${CUSTOM_LABELS}" '. + $custom')
 
 
 PP_POD_SPEC=$(jq -r . <<< "${POD_SPEC}")
