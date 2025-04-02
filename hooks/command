@@ -22,6 +22,14 @@ if [ "${MOUNT_SOURCE}" == "true" ]; then
   POD_SPEC=$(jq -cr ".nodeName = \"${BUILDKITE_AGENT_NODE_NAME}\"" <<< "${POD_SPEC}")
 fi
 
+CUSTOM_LABELS=$(jq -cr '.["custom-labels"] // {}' <<< "${BUILDKITE_PLUGIN_CONFIGURATION}")
+DEFAULT_LABELS=$(cat <<EOF
+{"service": "buildkite", "pipeline": "${BUILDKITE_PIPELINE_SLUG}", "step": "${BUILDKITE_STEP_ID}"}
+EOF
+)
+LABELS=$(echo "${DEFAULT_LABELS}" | jq -c --argjson extra "${CUSTOM_LABELS}" '. + $custom')
+
+
 PP_POD_SPEC=$(jq -r . <<< "${POD_SPEC}")
 echo -e "Creating job with pod-spec:\n${PP_POD_SPEC}"
 cat <<EOF | kubectl create -f -
@@ -31,10 +39,7 @@ metadata:
   annotations: ${ANNOTATIONS}
   generateName: ${BUILDKITE_PIPELINE_SLUG}-${BUILDKITE_BUILD_NUMBER}-
   namespace: ${NAMESPACE}
-  labels:
-    service: buildkite
-    pipeline: ${BUILDKITE_PIPELINE_SLUG}
-    step: ${BUILDKITE_STEP_ID}
+  labels: ${LABELS}
 spec:
   backoffLimit: 0
   completions: 1
@@ -43,10 +48,7 @@ spec:
   template:
     metadata:
       annotations: ${ANNOTATIONS}
-      labels:
-        service: buildkite
-        pipeline: ${BUILDKITE_PIPELINE_SLUG}
-        step: ${BUILDKITE_STEP_ID}
+      labels: ${LABELS}
     spec: ${POD_SPEC}
 EOF
 
